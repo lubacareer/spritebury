@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist", "Geist Fallback", Arial, Helvetica, sans-serif;
+  --font-sans: var(--font-original-surfer), "Comic Sans MS", Arial, Helvetica, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", Consolas, monospace;
 }
 
@@ -22,7 +22,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-original-surfer), "Comic Sans MS", Arial, Helvetica, sans-serif;
 }
 
 button,
@@ -99,4 +99,17 @@ textarea {
 .pixel-button:active {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #2b170c;
+}
+
+.avatar-sprite-display {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: #fff9d8;
+  background-image: var(--avatar-image);
+  background-repeat: no-repeat;
+  background-size: var(--avatar-size);
+  background-position: var(--avatar-position);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }

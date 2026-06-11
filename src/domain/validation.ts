@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { selectableAvatarIds } from "./avatars";
 
-export const avatarBaseTypes = ["townie", "skater", "cozy"] as const;
+export const avatarBaseTypes = selectableAvatarIds;
 
 export const emailOtpSchema = z.object({
   email: z.string().trim().email("Enter a valid email address.").max(254),

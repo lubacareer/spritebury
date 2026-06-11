@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AvatarSprite } from "@/components/avatar-sprite";
 import { signOut } from "@/features/auth/actions";
 import { getPlayerAccount, requireCurrentUser } from "@/lib/auth/dal";
 
@@ -55,7 +56,7 @@ export default async function CityLocationPage({
             </button>
           </form>
         </div>
-        <div className="mt-7 grid gap-4 sm:grid-cols-3">
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-md border-4 border-[#5b351d] bg-[#fff9d8] p-4">
             <h2 className="font-black uppercase text-[#553019]">Player</h2>
             <p className="mt-2 text-2xl font-black">
@@ -64,13 +65,26 @@ export default async function CityLocationPage({
           </div>
           <div className="rounded-md border-4 border-[#5b351d] bg-[#fff9d8] p-4">
             <h2 className="font-black uppercase text-[#553019]">Avatar</h2>
-            <p className="mt-2 text-2xl font-black">{account.avatar.base_type}</p>
+            <AvatarSprite
+              avatarId={account.avatar.base_type}
+              className="mt-3 h-28 w-36"
+              label="Selected avatar"
+            />
           </div>
           <div className="rounded-md border-4 border-[#5b351d] bg-[#fff9d8] p-4">
             <h2 className="font-black uppercase text-[#553019]">Coins</h2>
             <p className="mt-2 text-2xl font-black">
               {account.wallet?.balance ?? 0}
             </p>
+          </div>
+          <div className="rounded-md border-4 border-[#5b351d] bg-[#fff9d8] p-4">
+            <h2 className="font-black uppercase text-[#553019]">Shop</h2>
+            <Link
+              href="/marketplace"
+              className="mt-3 inline-block font-black uppercase text-[#1368ae]"
+            >
+              Buy Rooms
+            </Link>
           </div>
         </div>
       </section>

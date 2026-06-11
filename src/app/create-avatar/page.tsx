@@ -19,13 +19,13 @@ export default async function CreateAvatarPage() {
             Create Avatar
           </h1>
           <p className="text-base font-semibold leading-7 text-[#553019]">
-            Choose your public player name and a starter look for the city.
+            Choose your public player name and starter sprite for the city.
           </p>
         </div>
         {account?.avatar ? (
-          <div className="mt-7 space-y-5">
-            <p className="rounded-md bg-[#e0f8d3] px-4 py-3 font-semibold text-[#245c20]">
-              Your avatar is ready.
+          <div className="mt-7 flex flex-wrap items-center gap-4 rounded-md bg-[#e0f8d3] px-4 py-3 font-semibold text-[#245c20]">
+            <p className="flex-1">
+              Your avatar is ready. You can choose a different sprite below.
             </p>
             <Link
               href="/city/town-square"
@@ -34,11 +34,16 @@ export default async function CreateAvatarPage() {
               Play
             </Link>
           </div>
-        ) : (
-          <div className="mt-7">
-            <CreateAvatarForm />
-          </div>
-        )}
+        ) : null}
+        <div className="mt-7">
+          <CreateAvatarForm
+            initialUsername={account?.profile?.username}
+            initialDisplayName={account?.profile?.display_name}
+            initialAvatarBaseType={account?.avatar?.base_type}
+            usernameLocked={Boolean(account?.profile)}
+            submitLabel={account?.avatar ? "Update Avatar" : "Create Avatar"}
+          />
+        </div>
       </section>
     </main>
   );

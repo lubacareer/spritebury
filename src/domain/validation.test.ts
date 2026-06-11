@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { selectableAvatarIds } from "./avatars";
 import { createAvatarSchema, sanitizeRedirectPath } from "./validation";
 
 describe("createAvatarSchema", () => {
@@ -6,7 +7,7 @@ describe("createAvatarSchema", () => {
     const result = createAvatarSchema.parse({
       username: "Sprite_Fan",
       displayName: "Sprite Fan",
-      avatarBaseType: "townie",
+      avatarBaseType: "female1",
     });
 
     expect(result.username).toBe("sprite_fan");
@@ -17,7 +18,7 @@ describe("createAvatarSchema", () => {
       createAvatarSchema.parse({
         username: "bad name!",
         displayName: "Sprite Fan",
-        avatarBaseType: "townie",
+        avatarBaseType: "female1",
       }),
     ).toThrow();
   });
@@ -30,6 +31,18 @@ describe("createAvatarSchema", () => {
         avatarBaseType: "admin",
       }),
     ).toThrow();
+  });
+
+  it("accepts every selectable avatar sprite id", () => {
+    for (const avatarBaseType of selectableAvatarIds) {
+      expect(
+        createAvatarSchema.parse({
+          username: "spritefan",
+          displayName: "Sprite Fan",
+          avatarBaseType,
+        }).avatarBaseType,
+      ).toBe(avatarBaseType);
+    }
   });
 });
 
