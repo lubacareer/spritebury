@@ -47,12 +47,25 @@ function fetchStub(handler: (url: URL, init: RequestInit) => unknown) {
   const mock = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
     expect(url.origin).toBe("https://spritebury-test.supabase.co");
-    return new Response(JSON.stringify(handler(url, init)), {
+    const result = handler(url, init);
+    if (result instanceof Response) return result;
+    return new Response(JSON.stringify(result), {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   });
   vi.stubGlobal("fetch", mock);
   return mock;
+}
+
+function expectServerUserLookup(mock: ReturnType<typeof fetchStub>, previousCalls: number, accessToken: string) {
+  const requests = mock.mock.calls.slice(previousCalls).filter(([input]) => {
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    return url.pathname === "/auth/v1/user";
+  });
+  expect(requests).toHaveLength(1);
+  const [, init = {}] = requests[0];
+  expect(init.method).toBe("GET");
+  expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${accessToken}`);
 }
 
 beforeEach(() => {
@@ -73,7 +86,7 @@ describe("the installed Supabase server client's cookie and PKCE contract", () =
     const issued = session();
     let challenge: string | undefined;
     let verifier: string | undefined;
-    fetchStub((url, init) => {
+    const http = fetchStub((url, init) => {
       if (url.pathname.endsWith("/otp")) {
         const body = JSON.parse(String(init.body));
         challenge = body.code_challenge;
@@ -107,13 +120,15 @@ describe("the installed Supabase server client's cookie and PKCE contract", () =
     expect(state.writes.filter(({ value }) => value).every(({ options }) => options.path === "/" && options.sameSite === "lax")).toBe(true);
 
     const later = (await createSupabaseServerClient())!;
+    const requestsBeforeLookup = http.mock.calls.length;
     expect((await later.auth.getUser()).data.user?.id).toBe(user.id);
+    expectServerUserLookup(http, requestsBeforeLookup, issued.access_token);
   });
 
   it("refreshes expired sessions, rotates refresh tokens and removes obsolete cookie chunks", async () => {
     const expired = session(-1, "fixture-old-refresh", "x".repeat(9000));
     const refreshed = session(3600, "fixture-rotated-refresh");
-    fetchStub((url, init) => {
+    const http = fetchStub((url, init) => {
       if (url.pathname.endsWith("/otp")) return {};
       if (url.pathname.endsWith("/token")) {
         if (url.searchParams.get("grant_type") === "pkce") return expired;
@@ -130,7 +145,9 @@ describe("the installed Supabase server client's cookie and PKCE contract", () =
     expect([...state.jar.keys()].filter((name) => name.startsWith(`${cookieName}.`)).length).toBeGreaterThan(1);
 
     const later = (await createSupabaseServerClient())!;
+    const requestsBeforeLookup = http.mock.calls.length;
     expect((await later.auth.getUser()).data.user?.id).toBe(user.id);
+    expectServerUserLookup(http, requestsBeforeLookup, refreshed.access_token);
     expect(storedSession().refresh_token).toBe("fixture-rotated-refresh");
     expect([...state.jar.keys()].filter((name) => name.startsWith(`${cookieName}.`))).toEqual([]);
     expect(state.writes.some(({ name, options }) => name.startsWith(`${cookieName}.`) && options.maxAge === 0)).toBe(true);
@@ -146,12 +163,18 @@ describe("the installed Supabase server client's cookie and PKCE contract", () =
     const first = (await createSupabaseServerClient())!;
     expect((await first.auth.signInWithOtp({ email: user.email })).error).toBeNull();
     expect((await first.auth.exchangeCodeForSession("fixture-authorization-code")).error).toBeNull();
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "invalid fixture token", code: "bad_jwt" }), {
-      status: 401, headers: { "Content-Type": "application/json" },
-    })));
+    const rejectedHttp = fetchStub((url, init) => {
+      expect(url.pathname).toBe("/auth/v1/user");
+      expect(init.method).toBe("GET");
+      expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${issued.access_token}`);
+      return new Response(JSON.stringify({ message: "invalid fixture token", code: "bad_jwt" }), {
+        status: 401, headers: { "Content-Type": "application/json" },
+      });
+    });
     const later = (await createSupabaseServerClient())!;
     const rejected = await later.auth.getUser();
     expect(rejected.error).not.toBeNull();
     expect(rejected.data.user).toBeNull();
+    expectServerUserLookup(rejectedHttp, 0, issued.access_token);
   });
 });
